@@ -1,0 +1,83 @@
+-- Create a database from the share.
+create database snowflake_sample_data from share sfc_samples.sample_data;
+
+-- Grant the PUBLIC role access to the database.
+-- Optionally change the role name to restrict access to a subset of users.
+grant imported privileges on database snowflake_sample_data to role public;
+
+
+create warehouse first_warehouse
+    WITH
+        WAREHOUSE_TYPE = 'STANDARD'
+        WAREHOUSE_SIZE = 'XSMALL'
+        MAX_CLUSTER_COUNT = 3
+        SCALING_POLICY = 'STANDARD'
+        AUTO_SUSPEND = 300
+        AUTO_RESUME = TRUE
+        COMMENT = 'FIRST WAREHOUSE';
+
+
+-- CREATING A STAGE FOR EXERCISE_DB
+create or replace stage exercise_stage
+url = 's3://snowflake-assignments-mc/loadingdata/'
+;
+
+
+LIST @exercise_stage;
+
+
+COPY INTO CUSTOMERS
+    FROM @exercise_stage
+    FILE_FORMAT = (TYPE = CSV FIELD_DELIMITER = ';' SKIP_HEADER = 1)
+    pattern = '.*customer.*';
+
+select * from customers limit 100;
+
+create stage file_format
+url = 's3://snowflake-assignments-mc/fileformat/';
+
+create file format csv_pipe
+type = CSV
+FIELD_DELIMITER = '|'
+SKIP_HEADER = 1;
+
+LIST @file_format;
+
+COPY INTO CUSTOMERS
+    FROM @file_format
+    file_format = csv_pipe;
+ --------------------------------------
+ --Workout on COPY OPTIONS ----
+ --------------------------------------
+
+ CREATE TABLE EMPLOYEES (
+    customer_id int,
+    first_name varchar(50),
+    last_name varchar(50),
+    email varchar(50),
+    age int,
+    department varchar(50)
+    );
+
+CREATE STAGE COPY_OPTION_PRACTICE
+URL = 's3://snowflake-assignments-mc/copyoptions/example1';
+
+CREATE FILE FORMAT COPY_OPTIONS
+TYPE = CSV
+FIELD_DELIMITER=','
+SKIP_HEADER=1;
+
+DESC FILE FORMAT COPY_OPTIONS;
+ALTER FILE FORMAT COPY_OPTIONS RENAME TO COPY_OPTIONS_FF ;
+
+--*****FIND ERRORS IF THIS COPY WAS TO BE PERFORMED
+COPY INTO EMPLOYEES
+    FROM @COPY_OPTION_PRACTICE
+    FILE_FORMAT = COPY_OPTIONS_FF
+    VALIDATION_MODE = RETURN_ERRORS; 
+--AFTER VALIDATING CARRY ON WITH ACCOUNTABILITY
+COPY INTO EMPLOYEES
+    FROM @COPY_OPTION_PRACTICE
+    FILE_FORMAT = COPY_OPTIONS_FF
+    ON_ERROR = CONTINUE; 
+
