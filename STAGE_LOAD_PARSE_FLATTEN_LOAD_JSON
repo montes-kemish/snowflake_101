@@ -1,0 +1,37 @@
+CREATE STAGE UNSTRUCTURED_PRACTICE
+URL =  's3://snowflake-assignments-mc/unstructureddata/';
+LIST @UNSTRUCTURED_PRACTICE;
+
+CREATE FILE FORMAT JSON_FF
+TYPE = JSON;
+
+CREATE OR REPLACE TABLE JSON_RAW (
+RAW_DATA VARIANT
+);
+COPY INTO JSON_RAW FROM @UNSTRUCTURED_PRACTICE
+FILE_FORMAT = JSON_FF;
+SELECT * FROM JSON_RAW;
+
+select * from json_raw as json_raw_table;-- where raw_data:last_name = 'Giotto';
+
+select 
+    raw_data:first_name as first_name,
+    raw_data:last_name as last_name,
+    raw_data:Skills[0] as skills_1,
+    raw_data:Skills[1] as skills_2
+from json_raw;
+
+--Example of a CTAS or Create Table AS ... Select
+create or replace table employee_skills(
+     first_name varchar(50),
+     last_name varchar(50),
+     skills_1 varchar(50),
+     skills_2 varchar(50)
+)as select 
+    raw_data:first_name as first_name,
+    raw_data:last_name as last_name,
+    raw_data:Skills[0] as skills_1,
+    raw_data:Skills[1] as skills_2
+from json_raw;
+
+select * from employee_skills;
